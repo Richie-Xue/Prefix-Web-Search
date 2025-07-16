@@ -29,6 +29,10 @@
         "url": "https://space.bilibili.com/416305699/history"
     },
     {
+        "prefix": "blsub",
+        "url": "https://t.bilibili.com/"
+    },
+    {
         "prefix": "yt",
         "url": "https://www.youtube.com/results?search_query={query}"
     },
