@@ -33,6 +33,18 @@
         "url": "https://www.youtube.com/results?search_query={query}"
     },
     {
+        "prefix": "ytlist",
+        "url": "https://www.youtube.com/feed/playlists"
+    },
+    {
+        "prefix": "ytlists",
+        "url": "https://www.youtube.com/feed/playlists"
+    },
+    {
+        "prefix": "ythis",
+        "url": "https://www.youtube.com/feed/history"
+    },
+    {
         "prefix": "moodle",
         "url": "https://moodle.uni-ulm.de/my/"
     },
