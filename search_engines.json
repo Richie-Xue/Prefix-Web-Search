@@ -1,0 +1,6 @@
+[
+    { "prefix": "gg", "url": "https://www.google.com/search?q={query}" },
+    { "prefix": "ddg", "url": "https://duckduckgo.com/?q={query}" },
+    { "prefix": "wiki", "url": "https://en.wikipedia.org/wiki/Special:Search?search={query}"},
+    { "prefix": "_default_", "url": "https://www.google.com/search?q={query}"}
+]

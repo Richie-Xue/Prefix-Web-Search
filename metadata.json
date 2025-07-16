@@ -1,0 +1,7 @@
+{
+  "uuid": "prefix-web-search@richie37xue.gmail.com",
+  "name": "Prefix Web Search",
+  "description": "Quick web searches using customizable prefixes (e.g., 'gg' for Google, 'yt' for YouTube).",
+  "shell-version": ["46"], 
+  "url": "https://github.com/richie37xue/gnome-shell-prefix-web-search" 
+}
