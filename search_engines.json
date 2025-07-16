@@ -1,6 +1,101 @@
 [
-    { "prefix": "gg", "url": "https://www.google.com/search?q={query}" },
-    { "prefix": "ddg", "url": "https://duckduckgo.com/?q={query}" },
-    { "prefix": "wiki", "url": "https://en.wikipedia.org/wiki/Special:Search?search={query}"},
-    { "prefix": "_default_", "url": "https://www.google.com/search?q={query}"}
+    {
+        "prefix": "gg",
+        "url": "https://www.google.com/search?q={query}"
+    },
+    {
+        "prefix": "imgg",
+        "url": "https://www.google.com/search?tbm=isch&q={query}"
+    },
+    {
+        "prefix": "bd",
+        "url": "https://www.baidu.com/s?wd={query}"
+    },
+    {
+        "prefix": "dpl",
+        "url": "https://www.deepl.com/translator#auto/auto/{query}"
+    },
+    {
+        "prefix": "bl",
+        "url": "https://search.bilibili.com/all?keyword={query}",
+        "empty_query_url": "https://www.bilibili.com/"
+    },
+    {
+        "prefix": "blfav",
+        "url": "https://space.bilibili.com/416305699/favlist"
+    },
+    {
+        "prefix": "blhis",
+        "url": "https://space.bilibili.com/416305699/history"
+    },
+    {
+        "prefix": "yt",
+        "url": "https://www.youtube.com/results?search_query={query}"
+    },
+    {
+        "prefix": "moodle",
+        "url": "https://moodle.uni-ulm.de/my/"
+    },
+    {
+        "prefix": "chatgpt",
+        "url": "https://chatgpt.com/"
+    },
+    {
+        "prefix": "deepseek",
+        "url": "https://chat.deepseek.com/"
+    },
+    {
+        "prefix": "whatsapp",
+        "url": "https://web.whatsapp.com/"
+    },
+    {
+        "prefix": "sogo",
+        "url": "https://sogo.uni-ulm.de/SOGo/"
+    },
+    {
+        "prefix": "gh",
+        "url": "https://github.com/search?q={query}"
+    },
+    {
+        "prefix": "wiki",
+        "url": "https://en.wikipedia.org/wiki/Special:Search?search={query}",
+        "empty_query_url": "https://en.wikipedia.org/wiki/Main_Page"
+    },
+    {
+        "prefix": "claude",
+        "url": "https://claude.ai/chat/"
+    },
+    {
+        "prefix": "gemini",
+        "url": "https://gemini.google.com/app"
+    },
+    {
+    	"prefix": "wechat",
+    	"url": "https://szfilehelper.weixin.qq.com/"
+    },
+    {
+    	"prefix": "gmail",
+    	"url": "https://mail.google.com/mail/u/0/"
+    },
+    {
+    	"prefix": "icloud",
+    	"url": "https://www.icloud.com/"
+    },
+    {
+    	"prefix": "dict",
+    	"url": "https://m.dict.cc/deutsch-englisch/{query}.html"
+    },
+    {
+    	"prefix": "linguee",
+    	"url": "https://www.linguee.com/english-german/search?source=auto&query={query}"
+    },
+    {
+    	"prefix": "duden",
+    	"url": "https://www.duden.de/suchen/dudenonline/{query}"
+    },
+    {
+        "prefix": "_default_",
+        "url": "https://www.google.com/search?q={query}"
+    }
 ]
+

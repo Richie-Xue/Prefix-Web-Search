@@ -7,10 +7,10 @@
 
 // Import necessary Gnome Shell modules
 import Gio from 'gi://Gio';
-import GLib from 'gi://GLib'; // Import GLib for spawn_command_line_async
+import GLib from 'gi://GLib';
+import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
-import St from 'gi://St'; // <--- NEW: Import St for UI elements like icons
 
 // --- Search Provider Class ---
 class PrefixWebSearchProvider {
@@ -19,24 +19,29 @@ class PrefixWebSearchProvider {
         this._lastParsedTerms = [];
         this._searchEnginesMap = new Map();
 
-        // Populate the map from the loaded configuration
+        // Populate the map from the loaded configuration, now without description fields
         searchEnginesConfig.forEach(engine => {
-            this._searchEnginesMap.set(engine.prefix, engine.url);
+            this._searchEnginesMap.set(engine.prefix, {
+                url: engine.url,
+                // display_name is not used for result name, but kept for clarity if needed later
+                // description_template and empty_query_description removed
+                empty_query_url: engine.empty_query_url // Optional, for direct homepage redirects
+            });
         });
 
         // Ensure a default is always available
         if (!this._searchEnginesMap.has('_default_')) {
-            this._searchEnginesMap.set('_default_', 'https://www.google.com/search?q={query}');
+            this._searchEnginesMap.set('_default_', {
+                url: 'https://www.google.com/search?q={query}'
+            });
         }
     }
 
     // --- Search Provider API Methods ---
 
-    // <--- NEW: Add a get name() property for the search provider ---
     get name() {
-        return 'Prefix Web Search'; // This name appears next to your results
+        return 'Prefix Web Search'; // This is the category title in the overview
     }
-    // --- END NEW ---
 
     get appInfo() { return null; }
     get canLaunchSearch() { return true; }
@@ -49,16 +54,14 @@ class PrefixWebSearchProvider {
      */
     activateResult(resultId, termsToUse) {
         log(`[${this._extension.uuid}] ACTIVATE_RESULT CALLED:`);
-        log(`[${this._extension.uuid}]   resultId: ${resultId}`);
-        log(`[${this._extension.uuid}]   terms (passed to function): ${termsToUse.join(' ')}`);
-        log(`[${this._extension.uuid}]   _lastParsedTerms (stored): ${this._lastParsedTerms.join(' ')}`);
+        log(`[${this._extension.uuid}]   resultId: ${resultId}`);
+        log(`[${this._extension.uuid}]   terms (passed to function): ${termsToUse.join(' ')}`);
+        log(`[${this._extension.uuid}]   _lastParsedTerms (stored): ${this._lastParsedTerms.join(' ')}`);
 
         const fullInputString = termsToUse.join(' ');
 
-        // Use the URL regex from the "working" extension, which proved reliable
         const urlRegexFromWorkingExtension = /(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&\/\/=]*)/;
 
-        // Key condition from the "working" extension to determine if it's a direct URL
         const isDirectUrl = urlRegexFromWorkingExtension.test(fullInputString) &&
                             fullInputString.match(urlRegexFromWorkingExtension)?.[0]?.length === fullInputString.length;
 
@@ -67,40 +70,40 @@ class PrefixWebSearchProvider {
         if (isDirectUrl) {
             targetUrl = fullInputString;
         } else {
-            // This branch uses YOUR existing prefix/default search logic for custom searches
             const firstTerm = termsToUse[0]?.toLowerCase();
             let actualSearchTerms;
-            let urlTemplate;
+            let engineConfig;
 
-            if (this._searchEnginesMap.has(firstTerm) && termsToUse.length > 1) {
-                urlTemplate = this._searchEnginesMap.get(firstTerm);
+            if (this._searchEnginesMap.has(firstTerm)) {
+                engineConfig = this._searchEnginesMap.get(firstTerm);
                 actualSearchTerms = termsToUse.slice(1);
             } else {
-                urlTemplate = this._searchEnginesMap.get('_default_');
+                engineConfig = this._searchEnginesMap.get('_default_');
                 actualSearchTerms = termsToUse;
             }
 
-            const searchQueryParam = actualSearchTerms.map(encodeURIComponent).join('+');
-            targetUrl = urlTemplate.replace('{query}', searchQueryParam);
+            // Keep empty_query_url logic for direct homepage redirects (e.g., Bilibili)
+            if (actualSearchTerms.length === 0 && engineConfig.empty_query_url) {
+                targetUrl = engineConfig.empty_query_url;
+            } else {
+                const searchQueryParam = actualSearchTerms.map(encodeURIComponent).join('+');
+                targetUrl = engineConfig.url.replace('{query}', searchQueryParam);
+            }
         }
 
-        // --- FINAL LAUNCH LOGIC ---
         let cmd = `xdg-open `;
         if (isDirectUrl) {
-            // For direct URLs, ensure http/https prefix. No quoting needed for xdg-open if it's a clean URL.
             if (targetUrl.startsWith("http://") || targetUrl.startsWith("https://")) {
                 cmd += targetUrl;
             } else {
                 cmd += `https://${targetUrl}`;
             }
         } else {
-            // For search queries, always quote the URL for xdg-open to handle spaces correctly.
             cmd += `"${targetUrl}"`;
         }
-        // --- END FINAL LAUNCH LOGIC ---
 
         log(`[${this._extension.uuid}] Launching final command: ${cmd}`);
-        GLib.spawn_command_line_async(cmd); // Using the method that works!
+        GLib.spawn_command_line_async(cmd);
     }
 
     launchSearch(terms) { return null; }
@@ -116,12 +119,12 @@ class PrefixWebSearchProvider {
             try {
                 const resultMetas = [];
                 const currentTerms = this._lastParsedTerms;
+                log(`[${this._extension.uuid}] getResultMetas CALLED for resultIds: ${resultIds.join(', ')} with currentTerms: ${currentTerms.join(' ')}`);
 
-                // Function to create an St.Icon from a themed icon name
                 const createIcon = (size) => {
                     log(`[${this._extension.uuid}] Attempting to create St.Icon for size: ${size}`);
                     const icon = new St.Icon({
-                        gicon: new Gio.ThemedIcon({ name: 'web-browser-symbolic' }), // Use a standard system icon
+                        gicon: new Gio.ThemedIcon({ name: 'web-browser-symbolic' }),
                         icon_size: size,
                     });
                     log(`[${this._extension.uuid}] Successfully created St.Icon.`);
@@ -130,40 +133,27 @@ class PrefixWebSearchProvider {
 
                 for (let id of resultIds) {
                     let name = '';
-                    let description = '';
+                    let description = ''; // Initialize as empty
 
                     if (id === 'direct-url') {
                         name = 'Open URL';
-                        description = `Open "${currentTerms.join(' ')}"`;
+                        description = ''; // No description for direct URL
+                        log(`[${this._extension.uuid}]   Result ID: ${id}, Name: "${name}", Description: "${description}"`);
                     } else if (id === 'custom-search') {
-                        const firstTerm = currentTerms[0]?.toLowerCase();
-                        const hasValidPrefix = this._searchEnginesMap.has(firstTerm) && currentTerms.length > 1;
-
-                        let displayQuery = '';
-                        let engineName = 'Web';
-
-                        if (hasValidPrefix) {
-                            displayQuery = currentTerms.slice(1).join(' ');
-                            engineName = Object.keys(Object.fromEntries(this._searchEnginesMap)).find(key => key === firstTerm) || 'Web';
-                            name = `Search ${engineName.toUpperCase()}`;
-                        } else {
-                            displayQuery = currentTerms.join(' ');
-                            engineName = Object.keys(Object.fromEntries(this._searchEnginesMap)).find(key => key === '_default_') || 'Web';
-                            name = 'Prefix Web Search';
-                        }
-
-                        description = `Search for "${displayQuery}" on ${engineName.toUpperCase()}`;
+                        // For custom search, name is fixed and description is empty
+                        name = 'Prefix Web Search';
+                        description = ''; // Explicitly set to empty string
+                        log(`[${this._extension.uuid}]   Result ID: ${id}, Name: "${name}", Description: "${description}"`);
                     }
 
-                    // <--- NEW: Add createIcon to the result meta ---
                     resultMetas.push({
                         id: id,
                         name: name,
-                        description: description,
-                        createIcon: createIcon // Attach the icon creation function
+                        description: description, // Always empty
+                        createIcon: createIcon
                     });
-                    // --- END NEW ---
                 }
+                log(`[${this._extension.uuid}] getResultMetas resolving with ${resultMetas.length} results.`);
                 resolve(resultMetas);
             } catch (e) {
                 log(`[${this._extension.uuid}] ERROR in getResultMetas: ${e}`);
@@ -185,6 +175,7 @@ class PrefixWebSearchProvider {
                 this._lastParsedTerms = terms;
 
                 if (terms.length === 0) {
+                    log(`[${this._extension.uuid}] GET_INITIAL_RESULT_SET: No terms, resolving with empty array.`);
                     resolve([]);
                     return;
                 }
@@ -201,12 +192,18 @@ class PrefixWebSearchProvider {
 
                 if (isDirectUrlInResultSet) {
                     identifiers.push('direct-url');
-                } else if (this._searchEnginesMap.has(firstTerm) && terms.length > 1) {
+                    log(`[${this._extension.uuid}] GET_INITIAL_RESULT_SET: Identified as direct URL.`);
+                }
+                else if (this._searchEnginesMap.has(firstTerm)) {
                     identifiers.push('custom-search');
-                } else if (terms.length > 0) {
+                    log(`[${this._extension.uuid}] GET_INITIAL_RESULT_SET: Identified as custom search with prefix "${firstTerm}".`);
+                }
+                else if (terms.length > 0) {
                     identifiers.push('custom-search');
+                    log(`[${this._extension.uuid}] GET_INITIAL_RESULT_SET: Identified as default web search.`);
                 }
 
+                log(`[${this._extension.uuid}] GET_INITIAL_RESULT_SET: Resolving with identifiers: ${identifiers.join(', ')}`);
                 resolve(identifiers);
             } catch (e) {
                 log(`[${this._extension.uuid}] ERROR in getInitialResultSet: ${e}`);
@@ -216,10 +213,12 @@ class PrefixWebSearchProvider {
     }
 
     getSubsearchResultSet(results, terms, cancellable = null) {
+        log(`[${this._extension.uuid}] getSubsearchResultSet CALLED.`);
         return this.getInitialResultSet(terms, cancellable);
     }
 
     filterResults(results, maxResults) {
+        log(`[${this._extension.uuid}] filterResults CALLED. Results count: ${results.length}, Max Results: ${maxResults}`);
         if (results.length <= maxResults)
             return results;
         return results.slice(0, maxResults);
@@ -247,6 +246,7 @@ export default class PrefixWebSearchExtension extends Extension {
             log(`[${this.uuid}] Successfully loaded search_engines.json`);
         } catch (e) {
             log(`[${this.uuid}] ERROR loading search_engines.json: ${e.message}`);
+            // Fallback config with minimal fields
             this._searchEnginesConfig = [
                 { "prefix": "gg", "url": "https://www.google.com/search?q={query}" },
                 { "prefix": "_default_", "url": "https://www.google.com/search?q={query}" }
@@ -279,3 +279,4 @@ export default class PrefixWebSearchExtension extends Extension {
         log(`[${this.uuid}] Prefix Web Search Extension Disabled`);
     }
 }
+
